@@ -10,7 +10,7 @@ cv_ar = cp_ar - R  # CORREÇÃO: cv derivado de cp para garantir consistência
 gamma_ar = cp_ar / cv_ar  # Coeficiente adiabático (~1.40)
 M_ar = 0.02897  # Massa molar do ar [kg/mol]
 
-# ==================== CLASSE CORRIGIDA ====================
+# ==================== CLASSE PRINCIPAL ====================
 class CilindroPistao:
     def __init__(self, diametro, curso_inicial, massa_gas, T0, P0=101325):
         self.A = np.pi * (diametro/2)**2  # Área do pistão
@@ -22,7 +22,7 @@ class CilindroPistao:
         self.n = massa_gas / M_ar  # Número de moles
         self.V0 = self.A * curso_inicial
         
-        # CORREÇÃO: Estado inicial consistente com lei dos gases
+        # Estado inicial consistente com lei dos gases
         self.P_i = P0
         self.V_i = self.V0
         self.T_i = (self.P_i * self.V_i) / (self.n * R)  # Temperatura ajustada para consistência
@@ -39,7 +39,7 @@ class CilindroPistao:
     def pressao_gas(self, V, T):
         return (self.n * R * T) / V
 
-    # ==================== PROCESSOS CORRIGIDOS ====================
+    # ==================== PROCESSOS TERMODINAMICOS ====================
     
     def processo_isocorico(self, Q):
         """Volume constante"""
@@ -52,7 +52,7 @@ class CilindroPistao:
         return P_f, V_f, T_f, W, Q, delta_U, False  # False: sem ajuste de Q
     
     def processo_isobarico(self, Q):
-        """Pressão constante - MELHORADO com feedback"""
+        """Pressão constante"""
         P_f = self.P_i
         
         if abs(Q) < 1e-10:
@@ -75,7 +75,7 @@ class CilindroPistao:
             return P_f, V_f, T_f, W, Q, delta_U, False
     
     def processo_isotermico(self, Q):
-        """Temperatura constante - COM AVISO CONCEITUAL"""
+        """Temperatura constante"""
         T_f = self.T_i
         # Em isotérmico, Q controla diretamente a expansão/compressão
         V_f = self.V_i * np.exp(Q / (self.n * R * T_f))
@@ -120,7 +120,7 @@ class CilindroPistao:
         
         return P_f, V_f, T_f, W, Q, delta_U, False
 
-# ==================== VISUALIZAÇÕES MELHORADAS ====================
+# ==================== VISUALIZAÇÕES ====================
 
 def plot_diagrama_PV_melhorado(P_i, V_i, P_f, V_f, processo, n_politropico=None):
     """Diagrama P-V com curvas reais"""
@@ -207,7 +207,7 @@ def desenhar_cilindro_simples(A, x_inicial, x_final, diametro):
     
     return fig
 
-# ==================== APLICAÇÃO STREAMLIT CORRIGIDA ====================
+# ==================== APLICAÇÃO STREAMLIT ====================
 
 def main():
     st.set_page_config(
@@ -229,7 +229,7 @@ def main():
     
     st.markdown("---")
     
-    # ==================== CONFIGURAÇÃO CORRIGIDA ====================
+    # ==================== CONFIGURAÇÃO ====================
     st.sidebar.header("Configuração do Sistema")
     
     st.sidebar.subheader("Geometria do Cilindro")
@@ -248,7 +248,6 @@ def main():
         ["Isocórico", "Isobárico", "Isotérmico", "Adiabático", "Politrópico"]
     )
     
-    # CORREÇÃO CRÍTICA: Remover atribuição desnecessária de 'n'
     if processo == "Isocórico":
         Q = st.sidebar.number_input("Calor (Q) [J]", -5000.0, 5000.0, 1000.0, 100.0)
         V_ratio = None
@@ -266,11 +265,10 @@ def main():
         n_politropico = st.sidebar.number_input("Expoente Politrópico (n)", 0.1, 3.0, 1.4, 0.1)
         V_ratio = st.sidebar.number_input("Razão de Volumes (Vf/Vi)", 0.1, 5.0, 1.5, 0.1)
     
-    # ==================== SIMULAÇÃO CORRIGIDA ====================
+    # ==================== SIMULAÇÃO ====================
     try:
         cilindro = CilindroPistao(diametro, curso_inicial, massa_gas, T0)
         
-        # Aviso sobre ajuste de estado inicial
         if cilindro.estado_ajustado:
             st.info(f"💡 **Aviso:** Temperatura ajustada de {T0:.1f} K para {cilindro.T_i:.1f} K para garantir consistência com a lei dos gases ideais.")
         
@@ -292,13 +290,12 @@ def main():
         
         x_final = cilindro.volume_para_posicao(V_f)
         
-        # ==================== RESULTADOS MELHORADOS ====================
+        # ==================== RESULTADOS ====================
         col1, col2 = st.columns(2)
         
         with col1:
             st.header("📊 Resultados da Simulação")
             
-            # Aviso sobre ajuste de Q no isobárico
             if Q_ajustado and processo == "Isobárico":
                 st.warning(f"⚡ **Ajuste de Consistência:** O calor foi ajustado de {Q_original:.1f} J para {Q_calc:.1f} J para respeitar rigorosamente a 1ª Lei da Termodinâmica.")
             
